@@ -118,12 +118,22 @@ export default function SessionPage() {
         const unsubs = [
             onSessionChange(sessionId, setSession),
             onParticipantsChange(sessionId, setParticipants),
-            onResponsibilitiesChange(sessionId, setResponsibilities),
             onSelectionsChange(sessionId, setSelections),
         ];
 
         return () => unsubs.forEach(u => u());
     }, [sessionId, setSession, setParticipants, setResponsibilities, setSelections]);
+
+    // Keep currentParticipant in sync
+    useEffect(() => {
+        if (currentParticipant && participants.length > 0) {
+            const upToDate = participants.find(p => p.id === currentParticipant.id);
+            if (upToDate && JSON.stringify(upToDate) !== JSON.stringify(currentParticipant)) {
+                setCurrentParticipant(upToDate);
+            }
+        }
+    }, [participants, currentParticipant, setCurrentParticipant]);
+
 
     if (loading) {
         return (
@@ -182,7 +192,7 @@ export default function SessionPage() {
                         Session ID: {session.id} · {participants.filter(p => p.status !== 'removed').length} participants · {responsibilities.length} responsibilities
                     </p>
                 </div>
-                {isOwner && <span className="badge badge-purple">👑 Owner</span>}
+                {isOwner && <span className="badge badge-purple">Owner</span>}
             </div>
 
             {/* Mode Indicator */}

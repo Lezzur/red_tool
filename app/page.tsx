@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createSession, addParticipant, getParticipantByEmail } from '@/lib/firestore';
+import HowItWorks from './components/HowItWorks';
 
 export default function HomePage() {
   const router = useRouter();
@@ -226,47 +227,7 @@ export default function HomePage() {
       </div>
 
       {/* How It Works */}
-      <div style={{ marginTop: 'var(--space-2xl)' }}>
-        <h3 className="section-title" style={{ textAlign: 'center' }}>How It Works</h3>
-        <div className="grid-3" style={{ marginTop: 'var(--space-lg)' }}>
-          <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ marginBottom: 'var(--space-sm)', position: 'relative', width: 80, height: 80 }}>
-              <Image
-                src="/icons/editing-icon.svg"
-                alt="Editing Phase"
-                fill
-                style={{ objectFit: 'contain' }}
-              />
-            </div>
-            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>1. Editing</h4>
-            <p className="text-sm text-secondary">AI generates responsibilities. Team nominates additions. Owner cleans and assigns weights.</p>
-          </div>
-          <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ marginBottom: 'var(--space-sm)', position: 'relative', width: 80, height: 80 }}>
-              <Image
-                src="/icons/acquiring-icon.svg"
-                alt="Acquiring Phase"
-                fill
-                style={{ objectFit: 'contain' }}
-              />
-            </div>
-            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>2. Acquiring</h4>
-            <p className="text-sm text-secondary">Participants independently select responsibilities. Blind selection ensures fairness.</p>
-          </div>
-          <div className="card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ marginBottom: 'var(--space-sm)', position: 'relative', width: 80, height: 80 }}>
-              <Image
-                src="/icons/evaluating-icon.svg"
-                alt="Evaluating Phase"
-                fill
-                style={{ objectFit: 'contain' }}
-              />
-            </div>
-            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>3. Evaluating</h4>
-            <p className="text-sm text-secondary">Owner resolves conflicts, adds factors, and the AI calculates fair equity splits.</p>
-          </div>
-        </div>
-      </div>
+      <HowItWorks />
 
       {/* Recovery Section */}
       <div className="card" style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', borderColor: 'var(--border-subtle)' }}>

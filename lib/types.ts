@@ -70,12 +70,13 @@ export interface Participant {
   session_id: string;
   name: string;
   role?: string;
-  email?: string;
+  email?: string | null;
   access_token: string;
   is_owner: boolean;
   status: ParticipantStatus;
+  editing_ready?: boolean;
   round1_submitted: boolean;
-  round1_finalized: boolean;
+  round1_finalized: boolean; // These seem to be for later stages (selection)
   created_at: number;
 }
 

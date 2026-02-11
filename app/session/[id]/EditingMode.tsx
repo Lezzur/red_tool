@@ -9,6 +9,7 @@ import {
     updateSessionMode,
     updateResponsibility,
     deleteResponsibility,
+    updateParticipant,
 } from '@/lib/firestore';
 import { nanoid } from 'nanoid';
 
@@ -210,19 +211,26 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
     };
 
     const activeResps = responsibilities.filter(r => r.status !== 'archived');
-    const activeParticipants = participants.filter(p => p.status === 'active');
-    const canProceed = activeResps.length >= 15 &&
-        activeResps.every(r => r.description.length >= 50) &&
+    const activeParticipants = participants.filter(p => p.status === 'active' || p.status === 'invited');
+    const canProceed = activeResps.length > 0 &&
+        activeResps.every(r => r.description.length >= 20) &&
         new Set(activeResps.map(r => r.title)).size === activeResps.length &&
-        activeParticipants.length >= 2;
+        activeParticipants.length >= 2 &&
+        activeParticipants.every(p => p.editing_ready); // All must be ready
+
+    const handleToggleReady = async () => {
+        if (!currentParticipant) return;
+        await updateParticipant(currentParticipant.id, { editing_ready: !currentParticipant.editing_ready });
+    };
 
     const handleProceed = async () => {
         if (!canProceed) {
             let message = '';
-            if (activeResps.length < 15) message += '\n• At least 15 responsibilities';
-            if (!activeResps.every(r => r.description.length >= 50)) message += '\n• Each must have a description (50+ chars)';
+            if (activeResps.length === 0) message += '\n• At least 1 responsibility';
+            if (!activeResps.every(r => r.description.length >= 20)) message += '\n• Each must have a description (20+ chars)';
             if (new Set(activeResps.map(r => r.title)).size !== activeResps.length) message += '\n• No duplicate titles';
             if (activeParticipants.length < 2) message += '\n• At least 2 active participants (including owner)';
+            if (!activeParticipants.every(p => p.editing_ready)) message += '\n• All participants must mark themselves as Ready';
 
             setAlertState({
                 show: true,
@@ -240,7 +248,7 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
             {/* Business Profile */}
             {session.business_profile && (
                 <div className="card mb-xl" style={{ padding: 'var(--space-md)' }}>
-                    <h3 className="card-title mb-sm">📊 Business Profile</h3>
+                    <h3 className="card-title mb-sm">Business Profile</h3>
                     <div className="flex gap-md flex-wrap">
                         <span className="badge badge-blue">{session.business_profile.type}</span>
                         <span className="badge badge-purple">{session.business_profile.industry}</span>
@@ -253,7 +261,7 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
             {/* Invite Team */}
             {isOwner && participants.some(p => !p.is_owner && p.status !== 'removed') && (
                 <div className="card mb-xl" style={{ padding: 'var(--space-md)' }}>
-                    <h3 className="card-title mb-sm">👥 Invite Team to Nominate</h3>
+                    <h3 className="card-title mb-sm">Invite Team to Nominate</h3>
                     <p className="text-sm text-secondary mb-md">
                         Share these links with your co-founders so they can suggest responsibilities.
                     </p>
@@ -281,6 +289,35 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
                     </div>
                 </div>
             )}
+
+            {/* Team Readiness */}
+            <div className="card mb-xl" style={{ padding: 'var(--space-md)' }}>
+                <div className="flex justify-between items-center mb-sm">
+                    <h3 className="card-title">Team Readiness</h3>
+                    <button
+                        className={`btn ${currentParticipant?.editing_ready ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={handleToggleReady}
+                    >
+                        {currentParticipant?.editing_ready ? '✓ Ready (Click to undo)' : '○ Mark as Ready to Proceed'}
+                    </button>
+                </div>
+
+                <hr className="mb-md border-subtle" style={{ opacity: 0.3 }} />
+
+                <div className="grid-2 gap-sm">
+                    {activeParticipants.map(p => (
+                        <div key={p.id} className="flex items-center gap-sm p-sm rounded border border-subtle bg-bg-secondary">
+                            <div className={`w-3 h-3 rounded-full ${p.editing_ready ? 'bg-load-green' : 'bg-text-tertiary'}`} />
+                            <div className="flex-1">
+                                <span className="font-semibold text-sm">
+                                    {p.name} {p.is_owner && p.name !== 'Owner' && <span className="text-secondary text-xs font-normal">(Owner)</span>}
+                                </span>
+                                <div className="text-xs text-secondary">{p.editing_ready ? 'Ready to proceed' : 'Reviewing...'}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {/* Stats */}
             <div className="stat-grid">
@@ -402,21 +439,21 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
                             <button className="btn btn-primary btn-lg" onClick={handleGenerate} disabled={isGenerating}>
                                 {isGenerating ? (
                                     <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Generating...</>
-                                ) : '🤖 AI Generate Responsibilities'}
+                                ) : 'AI Generate Responsibilities'}
                             </button>
                         )}
                         {activeResps.length > 0 && (
                             <>
                                 <button className="btn btn-secondary" onClick={() => setShowHistory(true)} title="View cleaning history">
-                                    🕒 History
+                                    History
                                 </button>
                                 <button className="btn btn-secondary" onClick={handleAIClean} disabled={isCleaning}>
                                     {isCleaning ? (
                                         <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Cleaning...</>
-                                    ) : '✨ AI Clean & Optimize'}
+                                    ) : 'AI Clean & Optimize'}
                                 </button>
                                 <button className="btn btn-primary" onClick={handleProceed} disabled={!canProceed}>
-                                    ✅ Finalize List →
+                                    Finalize List →
                                 </button>
                             </>
                         )}
@@ -426,7 +463,7 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
 
             {!canProceed && activeResps.length > 0 && isOwner && (
                 <div className="alert alert-warning mb-lg">
-                    ⚠️ Need 15+ responsibilities and 2+ active participants to proceed.
+                    ⚠️ Need at least 1 responsibility and 2+ active participants to proceed.
                 </div>
             )}
 
@@ -460,7 +497,7 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
                                         <span className="text-xs text-muted">⏱ {resp.typical_time_commitment}</span>
                                     )}
                                     <span className="text-xs text-muted">
-                                        {resp.nominated_by.includes('ai') ? '🤖 AI' : '👤 Nominated'}
+                                        {resp.nominated_by.includes('ai') ? 'AI' : 'Nominated'}
                                     </span>
                                 </div>
                             </div>
