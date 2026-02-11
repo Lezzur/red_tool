@@ -111,6 +111,11 @@ export default function ProcessingMode({ isOwner }: { isOwner: boolean }) {
         setIsSaving(false);
     };
 
+    const handleNextToSelection = async () => {
+        await saveWeights();
+        setStep('selection');
+    };
+
     const ownerLoad = calculateParticipantLoad(
         currentParticipant.id,
         [...ownerSelectedIds],
@@ -193,10 +198,7 @@ export default function ProcessingMode({ isOwner }: { isOwner: boolean }) {
                             <button className="btn btn-secondary" onClick={handleAIWeights} disabled={isAutoWeighting}>
                                 {isAutoWeighting ? (
                                     <><span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> AI Weighing...</>
-                                ) : '🤖 AI Auto-Weight'}
-                            </button>
-                            <button className="btn btn-primary" onClick={saveWeights} disabled={isSaving}>
-                                {isSaving ? 'Saving...' : '💾 Save Weights'}
+                                ) : 'AI Auto-Weight'}
                             </button>
                         </div>
                     </div>
@@ -264,8 +266,8 @@ export default function ProcessingMode({ isOwner }: { isOwner: boolean }) {
                         <button className="btn btn-secondary" onClick={() => updateSessionMode(session.id, 'editing')}>
                             ← Back to Editing
                         </button>
-                        <button className="btn btn-primary" onClick={() => setStep('selection')} disabled={Math.abs(totalWeight - 1) > 0.01}>
-                            Next: Your Selection →
+                        <button className="btn btn-primary" onClick={handleNextToSelection} disabled={Math.abs(totalWeight - 1) > 0.01 || isSaving}>
+                            {isSaving ? 'Saving...' : 'Next: Your Selection →'}
                         </button>
                     </div>
                 </div>

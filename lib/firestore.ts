@@ -80,7 +80,7 @@ export async function createSession(data: {
         id: ownerId,
         session_id: sessionId,
         name: 'Owner',
-        email: data.owner_email,
+        email: data.owner_email || null,
         is_owner: true,
         access_token: ownerToken,
         status: 'active',

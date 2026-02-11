@@ -136,7 +136,7 @@ export default function OwnerOnboardingPage() {
     return (
         <div className="page-container" style={{ maxWidth: 640 }}>
             <div style={{ textAlign: 'center', padding: 'var(--space-2xl) 0 var(--space-lg)' }}>
-                <span style={{ fontSize: 48, display: 'block', marginBottom: 'var(--space-sm)' }}>👤</span>
+
                 <h1 className="page-title" style={{ fontSize: 'var(--font-2xl)' }}>Your Profile — {businessName}</h1>
                 <p className="page-subtitle">Before we start, tell us about your experience and commitment.</p>
             </div>

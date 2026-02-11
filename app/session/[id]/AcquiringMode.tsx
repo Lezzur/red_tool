@@ -300,9 +300,17 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                     </div>
                     <div className="category-grid">
                         {resps.map(resp => {
-                            const takenBy = selections.find(s => s.responsibility_id === resp.id && s.participant_id !== currentParticipant.id);
-                            const isUnavailable = (resp.sharing_allowed === 'closed' || resp.sharing_allowed === null) && !!takenBy;
-                            const unavailableBy = isUnavailable ? participants.find(p => p.id === takenBy?.participant_id) : null;
+                            const takenBySelection = selections.find(s => s.responsibility_id === resp.id && s.participant_id !== currentParticipant.id);
+                            const takenByParticipant = takenBySelection ? participants.find(p => p.id === takenBySelection.participant_id) : null;
+
+                            const isSharingOpen = resp.sharing_allowed === 'open';
+                            const isSharingClosed = resp.sharing_allowed === 'closed' || resp.sharing_allowed === null;
+
+                            // It is unavailable ONLY if someone else took it AND sharing is NOT open
+                            const isUnavailable = !!takenBySelection && isSharingClosed;
+
+                            // It is shared if someone else took it AND sharing IS open
+                            const isShared = !!takenBySelection && isSharingOpen;
 
                             return (
                                 <div
@@ -310,12 +318,12 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                                     className={`resp-card ${localSelectedIds.has(resp.id) ? 'selected' : ''} ${isUnavailable ? 'unavailable' : ''}`}
                                     onClick={() => {
                                         if (isUnavailable) {
-                                            alert(`This item is taken by ${unavailableBy?.name || 'someone else'} and cannot be shared.`);
+                                            alert(`This item is taken by ${takenByParticipant?.name || 'someone else'} and cannot be shared.`);
                                             return;
                                         }
                                         toggleSelection(resp.id);
                                     }}
-                                    title={isUnavailable ? `Taken by ${unavailableBy?.name}` : ''}
+                                    title={isUnavailable ? `Taken by ${takenByParticipant?.name}` : isShared ? `Shared with ${takenByParticipant?.name}` : ''}
                                 >
                                     <div className="resp-card-header">
                                         <div className={`checkbox ${localSelectedIds.has(resp.id) ? 'checked' : ''}`} />
@@ -330,12 +338,23 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                                             {resp.criticality}
                                         </span>
                                         <span className="text-xs text-muted">⏱ {resp.typical_time_commitment || 'TBD'}</span>
+
+                                        {/* Unavailable / Locked Badge */}
                                         {isUnavailable && (
                                             <span className="badge badge-red flex items-center gap-xs">
-                                                🔒 Taken by {unavailableBy?.name || 'Someone'}
+                                                🔒 Taken by {takenByParticipant?.name || 'Someone'}
                                             </span>
                                         )}
-                                        {resp.sharing_allowed === 'open' && !isUnavailable && (
+
+                                        {/* Shared Badge */}
+                                        {isShared && (
+                                            <span className="badge badge-blue flex items-center gap-xs">
+                                                👥 Shared with {takenByParticipant?.name || 'Others'}
+                                            </span>
+                                        )}
+
+                                        {/* Open Badge (only if not taken by anyone yet) */}
+                                        {isSharingOpen && !isShared && (
                                             <span className="badge badge-green">Open</span>
                                         )}
                                     </div>
