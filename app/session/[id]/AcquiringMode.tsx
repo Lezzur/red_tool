@@ -84,7 +84,7 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
     const conflictResps = activeResps.filter(r => {
         const resp = responsibilities.find(x => x.id === r.id);
         const selectedBy = selectionsByResp.get(r.id) || [];
-        return resp?.sharing_allowed === 'closed' && selectedBy.length > 1;
+        return (resp?.sharing_allowed === 'closed' || resp?.sharing_allowed === null) && selectedBy.length > 1;
     });
 
     const submittedCount = nonOwnerParticipants.filter(p => p.round1_submitted).length;
@@ -165,7 +165,7 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                                 <tbody>
                                     {activeResps.map(resp => {
                                         const selectedBy = selectionsByResp.get(resp.id) || [];
-                                        const isConflict = resp.sharing_allowed === 'closed' && selectedBy.length > 1;
+                                        const isConflict = (resp.sharing_allowed === 'closed' || resp.sharing_allowed === null) && selectedBy.length > 1;
                                         return (
                                             <tr key={resp.id} style={isConflict ? { background: 'var(--load-red-bg)' } : {}}>
                                                 <td className="font-semibold">
@@ -261,7 +261,7 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                     <div className="category-grid">
                         {resps.map(resp => {
                             const takenBy = selections.find(s => s.responsibility_id === resp.id && s.participant_id !== currentParticipant.id);
-                            const isUnavailable = resp.sharing_allowed === 'closed' && !!takenBy;
+                            const isUnavailable = (resp.sharing_allowed === 'closed' || resp.sharing_allowed === null) && !!takenBy;
                             const unavailableBy = isUnavailable ? participants.find(p => p.id === takenBy?.participant_id) : null;
 
                             return (

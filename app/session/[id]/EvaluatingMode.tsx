@@ -58,7 +58,7 @@ export default function EvaluatingMode() {
         activeResps
             .filter(r => {
                 const selectedBy = selectionsByResp.get(r.id) || [];
-                return r.sharing_allowed === 'closed' && selectedBy.length > 1;
+                return (r.sharing_allowed === 'closed' || r.sharing_allowed === null) && selectedBy.length > 1;
             })
             .map(r => ({
                 responsibility: r,
@@ -88,7 +88,7 @@ export default function EvaluatingMode() {
         for (const resp of activeResps) {
             const selectedBy = selectionsByResp.get(resp.id) || [];
 
-            if (resp.sharing_allowed === 'closed' && selectedBy.length > 1) {
+            if ((resp.sharing_allowed === 'closed' || resp.sharing_allowed === null) && selectedBy.length > 1) {
                 // Conflict — use resolution
                 const winner = conflictResolutions[resp.id];
                 if (winner) {
