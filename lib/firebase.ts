@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
@@ -12,9 +12,14 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Use memory-only cache to avoid IndexedDB issues
-const db = initializeFirestore(app, {
-    localCache: memoryLocalCache(),
-});
+let db: ReturnType<typeof getFirestore>;
+try {
+    db = initializeFirestore(app, {
+        localCache: memoryLocalCache(),
+    });
+} catch {
+    // Already initialized (e.g. hot-reload) — just get the existing instance
+    db = getFirestore(app);
+}
 
 export { app, db };
