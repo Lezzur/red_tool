@@ -118,18 +118,14 @@ export default function HomePage() {
 
         <div className="form-group">
           <label className="form-label">Number of Participants (excluding you)</label>
-          <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-            {[1, 2, 3, 4, 5].map(n => (
-              <button
-                key={n}
-                className={`btn ${participantCount === n ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => handleParticipantCountChange(n)}
-                type="button"
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+          <input
+            className="form-input"
+            type="number"
+            min={1}
+            max={50}
+            value={participantCount}
+            onChange={e => handleParticipantCountChange(Math.max(1, parseInt(e.target.value) || 0))}
+          />
         </div>
 
         <div className="form-group">
