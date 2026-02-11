@@ -45,17 +45,21 @@ export default function HomePage() {
     setIsCreating(true);
 
     try {
+      console.log('Creating session...');
       const { session, owner } = await createSession({
         business_name: businessName.trim(),
         business_concept: businessConcept.trim(),
         participant_count: participantCount,
         session_type: 'asynchronous',
       });
+      console.log('Session created:', session.id);
 
       // Add participants
+      console.log('Adding participants:', participantNames);
       for (const name of participantNames) {
         if (name.trim()) {
           await addParticipant(session.id, name.trim());
+          console.log('Added participant:', name);
         }
       }
 
@@ -63,10 +67,11 @@ export default function HomePage() {
       localStorage.setItem(`owner_${session.id}`, owner.access_token);
       localStorage.setItem(`participant_id_${session.id}`, owner.id);
 
+      console.log('Navigating to onboarding...');
       router.push(`/session/${session.id}/onboarding`);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to create session. Check your Firebase config.');
+    } catch (err: any) {
+      console.error('Create session error:', err);
+      setError(err?.message || 'Failed to create session. Check your Firebase config and network connection.');
     } finally {
       setIsCreating(false);
     }
