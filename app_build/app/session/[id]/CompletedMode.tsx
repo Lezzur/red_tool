@@ -5,6 +5,8 @@ import { useSessionStore } from '@/lib/store';
 import { getSessionCalculations, getSessionAssignments } from '@/lib/firestore';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
@@ -53,8 +55,7 @@ export default function CompletedMode() {
         datasets: [{
             data: sortedCalcs.map(c => parseFloat(c.final_equity.toFixed(1))),
             backgroundColor: sortedCalcs.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-            borderColor: '#0a0e1a',
-            borderWidth: 2,
+            borderWidth: 0,
         }],
     };
 
@@ -135,15 +136,51 @@ export default function CompletedMode() {
         }, 100);
     };
 
-    const handleDownload = () => {
-        const md = generateMarkdown();
-        const blob = new Blob([md], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `equity-report-${session?.business_name?.replace(/\s+/g, '-').toLowerCase()}.md`;
-        a.click();
-        URL.revokeObjectURL(url);
+    const handleDownload = async () => {
+        if (!session || !exportRef.current) return;
+        setLoading(true);
+
+        const content = document.getElementById('report-content');
+        if (!content) return;
+
+        try {
+            const canvas = await html2canvas(content, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#F8F7FC', // match bg-primary
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4',
+            });
+
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`equity-report-${session.business_name.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+        } catch (err) {
+            console.error('PDF generation failed', err);
+            alert('Failed to generate PDF. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
@@ -172,149 +209,154 @@ export default function CompletedMode() {
                     <h2 className="section-title">Equity Distribution Results</h2>
                     <p className="section-subtitle">Final equity split based on responsibilities, experience, time, and investment.</p>
                 </div>
-                <div className="flex gap-sm">
+                <div className="flex gap-sm" data-html2canvas-ignore>
                     <button className="btn btn-secondary" onClick={handleExport}>📋 View Markdown</button>
-                    <button className="btn btn-primary" onClick={handleDownload}>📥 Download Report</button>
+                    <button className="btn btn-primary" onClick={handleDownload}>
+                        {loading ? 'Generating PDF...' : '📥 Download Report (PDF)'}
+                    </button>
                 </div>
             </div>
 
-            {/* Equity Cards */}
-            <div className="stat-grid" style={{ gridTemplateColumns: `repeat(${Math.min(sortedCalcs.length, 4)}, 1fr)` }}>
-                {sortedCalcs.map((calc, i) => (
-                    <div key={calc.participant_id} className="card" style={{ textAlign: 'center', borderTop: `3px solid ${CHART_COLORS[i % CHART_COLORS.length]}` }}>
-                        <div style={{ fontSize: 'var(--font-3xl)', fontWeight: 800, color: CHART_COLORS[i % CHART_COLORS.length] }}>
-                            {calc.final_equity.toFixed(1)}%
+            <div id="report-content" style={{ padding: '20px', background: '#F8F7FC' }}>
+
+                {/* Equity Cards */}
+                <div className="stat-grid" style={{ gridTemplateColumns: `repeat(${Math.min(sortedCalcs.length, 4)}, 1fr)` }}>
+                    {sortedCalcs.map((calc, i) => (
+                        <div key={calc.participant_id} className="card" style={{ textAlign: 'center', borderTop: `3px solid ${CHART_COLORS[i % CHART_COLORS.length]}` }}>
+                            <div style={{ fontSize: 'var(--font-3xl)', fontWeight: 800, color: CHART_COLORS[i % CHART_COLORS.length] }}>
+                                {calc.final_equity.toFixed(1)}%
+                            </div>
+                            <div className="font-semibold mb-sm">{calc.participant_name}</div>
+                            <div className="text-xs text-muted">
+                                Base: {calc.base_equity.toFixed(1)}% · Multiplier: ×{calc.combined_multiplier.toFixed(2)}
+                            </div>
+                            <div className="flex gap-xs justify-center mt-md flex-wrap">
+                                <span className="badge badge-blue">Exp ×{calc.experience_multiplier.toFixed(2)}</span>
+                                <span className="badge badge-green">Time ×{calc.time_multiplier.toFixed(2)}</span>
+                                <span className="badge badge-yellow">Inv ×{calc.investment_multiplier.toFixed(2)}</span>
+                            </div>
                         </div>
-                        <div className="font-semibold mb-sm">{calc.participant_name}</div>
-                        <div className="text-xs text-muted">
-                            Base: {calc.base_equity.toFixed(1)}% · Multiplier: ×{calc.combined_multiplier.toFixed(2)}
-                        </div>
-                        <div className="flex gap-xs justify-center mt-md flex-wrap">
-                            <span className="badge badge-blue">Exp ×{calc.experience_multiplier.toFixed(2)}</span>
-                            <span className="badge badge-green">Time ×{calc.time_multiplier.toFixed(2)}</span>
-                            <span className="badge badge-yellow">Inv ×{calc.investment_multiplier.toFixed(2)}</span>
+                    ))}
+                </div>
+
+                {/* Charts */}
+                <div className="grid-2 mb-xl" style={{ marginTop: 'var(--space-xl)' }}>
+                    <div className="card" style={{ height: 350 }}>
+                        <h3 className="card-title mb-md">Equity Distribution</h3>
+                        <div style={{ height: 280 }}>
+                            <Pie data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } } }} />
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* Charts */}
-            <div className="grid-2 mb-xl" style={{ marginTop: 'var(--space-xl)' }}>
-                <div className="card" style={{ height: 350 }}>
-                    <h3 className="card-title mb-md">Equity Distribution</h3>
-                    <div style={{ height: 280 }}>
-                        <Pie data={pieData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } } }} />
+                    <div className="card" style={{ height: 350 }}>
+                        <h3 className="card-title mb-md">Base vs Final</h3>
+                        <div style={{ height: 280 }}>
+                            <Bar data={barData} options={chartOptions} />
+                        </div>
                     </div>
                 </div>
-                <div className="card" style={{ height: 350 }}>
-                    <h3 className="card-title mb-md">Base vs Final</h3>
-                    <div style={{ height: 280 }}>
-                        <Bar data={barData} options={chartOptions} />
-                    </div>
-                </div>
-            </div>
 
-            {/* Detailed Breakdown */}
-            <div className="card mb-xl">
-                <h3 className="card-title mb-md">📊 Detailed Breakdown</h3>
-                <div className="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Participant</th>
-                                <th>Base Weight</th>
-                                <th>Base Equity</th>
-                                <th>Exp ×</th>
-                                <th>Time ×</th>
-                                <th>Inv ×</th>
-                                <th>Combined ×</th>
-                                <th>Final Equity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedCalcs.map(c => (
-                                <tr key={c.participant_id}>
-                                    <td className="font-semibold">{c.participant_name}</td>
-                                    <td>{c.base_weight.toFixed(3)}</td>
-                                    <td>{c.base_equity.toFixed(1)}%</td>
-                                    <td>×{c.experience_multiplier.toFixed(2)}</td>
-                                    <td>×{c.time_multiplier.toFixed(2)}</td>
-                                    <td>×{c.investment_multiplier.toFixed(2)}</td>
-                                    <td>×{c.combined_multiplier.toFixed(2)}</td>
-                                    <td style={{ fontWeight: 700, color: 'var(--accent-solid)' }}>{c.final_equity.toFixed(1)}%</td>
+                {/* Detailed Breakdown */}
+                <div className="card mb-xl">
+                    <h3 className="card-title mb-md">📊 Detailed Breakdown</h3>
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Participant</th>
+                                    <th>Base Weight</th>
+                                    <th>Base Equity</th>
+                                    <th>Exp ×</th>
+                                    <th>Time ×</th>
+                                    <th>Inv ×</th>
+                                    <th>Combined ×</th>
+                                    <th>Final Equity</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Assignment Matrix */}
-            <div className="card mb-xl">
-                <h3 className="card-title mb-md">📋 Responsibility Assignment Matrix</h3>
-                <div className="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Responsibility</th>
-                                <th>Category</th>
-                                <th>Weight</th>
-                                {activeParticipants.map(p => <th key={p.id}>{p.name}</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeResps.sort((a, b) => a.category.localeCompare(b.category)).map(resp => (
-                                <tr key={resp.id}>
-                                    <td className="font-semibold">{resp.title}</td>
-                                    <td className="text-xs text-muted">{resp.category}</td>
-                                    <td>{(resp.weight * 100).toFixed(1)}%</td>
-                                    {activeParticipants.map(p => {
-                                        const isAssigned = assignments.some(
-                                            a => a.responsibility_id === resp.id && a.participant_id === p.id
-                                        );
-                                        return (
-                                            <td key={p.id} style={{ textAlign: 'center' }}>
-                                                {isAssigned ? '✓' : '—'}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Export Modal */}
-            {showExport && (
-                <div className="modal-overlay" onClick={() => setShowExport(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Markdown Report</h3>
-                            <button className="modal-close" onClick={() => setShowExport(false)}>✕</button>
-                        </div>
-                        <textarea
-                            ref={exportRef}
-                            className="form-textarea"
-                            style={{ minHeight: 400, fontFamily: 'monospace', fontSize: '12px' }}
-                            readOnly
-                            defaultValue={generateMarkdown()}
-                        />
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => {
-                                navigator.clipboard.writeText(generateMarkdown());
-                                alert('Copied to clipboard!');
-                            }}>📋 Copy</button>
-                            <button className="btn btn-primary" onClick={handleDownload}>📥 Download</button>
-                        </div>
+                            </thead>
+                            <tbody>
+                                {sortedCalcs.map(c => (
+                                    <tr key={c.participant_id}>
+                                        <td className="font-semibold">{c.participant_name}</td>
+                                        <td>{c.base_weight.toFixed(3)}</td>
+                                        <td>{c.base_equity.toFixed(1)}%</td>
+                                        <td>×{c.experience_multiplier.toFixed(2)}</td>
+                                        <td>×{c.time_multiplier.toFixed(2)}</td>
+                                        <td>×{c.investment_multiplier.toFixed(2)}</td>
+                                        <td>×{c.combined_multiplier.toFixed(2)}</td>
+                                        <td style={{ fontWeight: 700, color: 'var(--accent-solid)' }}>{c.final_equity.toFixed(1)}%</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            )}
 
-            <footer style={{ textAlign: 'center', padding: 'var(--space-xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
-                This report is for informational purposes only and does not constitute legal advice.
-                Consult a qualified attorney before finalizing any equity agreements.
-            </footer>
+                {/* Assignment Matrix */}
+                <div className="card mb-xl">
+                    <h3 className="card-title mb-md">📋 Responsibility Assignment Matrix</h3>
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Responsibility</th>
+                                    <th>Category</th>
+                                    <th>Weight</th>
+                                    {activeParticipants.map(p => <th key={p.id}>{p.name}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeResps.sort((a, b) => a.category.localeCompare(b.category)).map(resp => (
+                                    <tr key={resp.id}>
+                                        <td className="font-semibold">{resp.title}</td>
+                                        <td className="text-xs text-muted">{resp.category}</td>
+                                        <td>{(resp.weight * 100).toFixed(1)}%</td>
+                                        {activeParticipants.map(p => {
+                                            const isAssigned = assignments.some(
+                                                a => a.responsibility_id === resp.id && a.participant_id === p.id
+                                            );
+                                            return (
+                                                <td key={p.id} style={{ textAlign: 'center' }}>
+                                                    {isAssigned ? '✓' : '—'}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Export Modal */}
+                {showExport && (
+                    <div className="modal-overlay" onClick={() => setShowExport(false)}>
+                        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+                            <div className="modal-header">
+                                <h3 className="modal-title">Markdown Report</h3>
+                                <button className="modal-close" onClick={() => setShowExport(false)}>✕</button>
+                            </div>
+                            <textarea
+                                ref={exportRef}
+                                className="form-textarea"
+                                style={{ minHeight: 400, fontFamily: 'monospace', fontSize: '12px' }}
+                                readOnly
+                                defaultValue={generateMarkdown()}
+                            />
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => {
+                                    navigator.clipboard.writeText(generateMarkdown());
+                                    alert('Copied to clipboard!');
+                                }}>📋 Copy</button>
+                                <button className="btn btn-primary" onClick={handleDownload}>📥 Download</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <footer style={{ textAlign: 'center', padding: 'var(--space-xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
+                    This report is for informational purposes only and does not constitute legal advice.
+                    Consult a qualified attorney before finalizing any equity agreements.
+                </footer>
+            </div>
         </div>
     );
 }

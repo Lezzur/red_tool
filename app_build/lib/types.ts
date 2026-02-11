@@ -5,7 +5,7 @@ export type SessionType = 'synchronous' | 'asynchronous' | 'hybrid';
 export type Criticality = 'Critical' | 'High' | 'Medium' | 'Low';
 export type SharingStatus = 'open' | 'closed';
 export type ParticipantStatus = 'invited' | 'active' | 'completed' | 'removed';
-export type SelectionStatus = 'pending' | 'confirmed' | 'rejected';
+export type SelectionStatus = 'draft' | 'pending' | 'confirmed' | 'rejected';
 export type ResponsibilityStatus = 'pending' | 'active' | 'archived';
 
 // ─── Business Profile ────────────────────────────────────────────

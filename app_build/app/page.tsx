@@ -2,32 +2,38 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createSession, addParticipant } from '@/lib/firestore';
+import { createSession, addParticipant, getParticipantByEmail } from '@/lib/firestore';
 
 export default function HomePage() {
   const router = useRouter();
   const [businessName, setBusinessName] = useState('');
   const [businessConcept, setBusinessConcept] = useState('');
   const [participantCount, setParticipantCount] = useState(1);
-  const [participantNames, setParticipantNames] = useState<string[]>(['']);
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [participantInputs, setParticipantInputs] = useState<{ name: string; email: string }[]>([{ name: '', email: '' }]);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
 
+  // Recovery State
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [isRecovering, setIsRecovering] = useState(false);
+
   const handleParticipantCountChange = (count: number) => {
     setParticipantCount(count);
-    const currentNames = [...participantNames];
-    if (count > currentNames.length) {
-      while (currentNames.length < count) currentNames.push('');
+    const currentInputs = [...participantInputs];
+    if (count > currentInputs.length) {
+      while (currentInputs.length < count) currentInputs.push({ name: '', email: '' });
     } else {
-      currentNames.splice(count);
+      currentInputs.splice(count);
     }
-    setParticipantNames(currentNames);
+    setParticipantInputs(currentInputs);
   };
 
-  const updateParticipantName = (index: number, name: string) => {
-    const updated = [...participantNames];
-    updated[index] = name;
-    setParticipantNames(updated);
+  const updateParticipantInput = (index: number, field: 'name' | 'email', value: string) => {
+    const updated = [...participantInputs];
+    updated[index] = { ...updated[index], [field]: value };
+    setParticipantInputs(updated);
   };
 
   const handleCreate = async () => {
@@ -57,15 +63,16 @@ export default function HomePage() {
           business_concept: businessConcept.trim(),
           participant_count: participantCount,
           session_type: 'asynchronous',
+          owner_email: ownerEmail.trim() || undefined,
         });
         console.log('Session created:', session.id);
 
         // Add participants
-        console.log('Adding participants:', participantNames);
-        for (const name of participantNames) {
-          if (name.trim()) {
-            await addParticipant(session.id, name.trim());
-            console.log('Added participant:', name);
+        console.log('Adding participants:', participantInputs);
+        for (const input of participantInputs) {
+          if (input.name.trim()) {
+            await addParticipant(session.id, input.name.trim(), input.email.trim() || undefined);
+            console.log('Added participant:', input.name);
           }
         }
 
@@ -86,12 +93,33 @@ export default function HomePage() {
     }
   };
 
+  const handleRecovery = async () => {
+    if (!recoveryEmail.trim()) return;
+    setIsRecovering(true);
+    setRecoveryMessage('');
+    try {
+      const participants = await getParticipantByEmail(recoveryEmail.trim());
+      if (participants.length > 0) {
+        // In a real app, we would send an email. For prototype, we show the links.
+        const links = participants.map(p => `${window.location.origin}/join/${p.access_token}`);
+        setRecoveryMessage(`Found ${participants.length} session(s). Links:\n${links.join('\n')}`);
+      } else {
+        setRecoveryMessage('No sessions found for this email.');
+      }
+    } catch (err) {
+      console.error(err);
+      setRecoveryMessage('Error recovering session.');
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
   return (
     <div className="page-container" style={{ maxWidth: 720 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: 'var(--space-3xl) 0 var(--space-2xl)' }}>
         <span style={{ fontSize: 56, display: 'block', marginBottom: 'var(--space-md)' }}>⚖️</span>
-        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>EquiSplit</h1>
+        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>REDIS</h1>
         <p className="page-subtitle" style={{ maxWidth: 500, margin: '0 auto' }}>
           AI-powered equity distribution for co-founders. Fair, transparent, and data-driven.
         </p>
@@ -113,6 +141,17 @@ export default function HomePage() {
             value={businessName}
             onChange={e => setBusinessName(e.target.value)}
             maxLength={100}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Your Email (Recommended for Recovery/Notifications)</label>
+          <input
+            className="form-input"
+            type="email"
+            placeholder="you@example.com"
+            value={ownerEmail}
+            onChange={e => setOwnerEmail(e.target.value)}
           />
         </div>
 
@@ -145,15 +184,25 @@ export default function HomePage() {
         <div className="form-group">
           <label className="form-label">Participant Names</label>
           <div className="flex flex-col gap-sm">
-            {participantNames.map((name, i) => (
-              <input
-                key={i}
-                className="form-input"
-                type="text"
-                placeholder={`Participant ${i + 1} name`}
-                value={name}
-                onChange={e => updateParticipantName(i, e.target.value)}
-              />
+            {participantInputs.map((input, i) => (
+              <div key={i} className="flex gap-sm">
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder={`Participant ${i + 1} Name`}
+                  value={input.name}
+                  onChange={e => updateParticipantInput(i, 'name', e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="Email (Optional)"
+                  value={input.email}
+                  onChange={e => updateParticipantInput(i, 'email', e.target.value)}
+                  style={{ flex: 1 }}
+                />
+              </div>
             ))}
           </div>
           <p className="form-hint">You can add or rename participants later.</p>
@@ -198,8 +247,36 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Recovery Section */}
+      <div className="card" style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', borderColor: 'var(--border-subtle)' }}>
+        <h3 className="section-title" style={{ fontSize: 'var(--font-lg)' }}>🔄 Lost your session link?</h3>
+        <p className="section-subtitle">Enter your email to recover your access link.</p>
+        <div className="form-group flex gap-md">
+          <input
+            className="form-input"
+            type="email"
+            placeholder="your@email.com"
+            value={recoveryEmail}
+            onChange={e => setRecoveryEmail(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button
+            className="btn btn-secondary"
+            onClick={handleRecovery}
+            disabled={isRecovering || !recoveryEmail.trim()}
+          >
+            {isRecovering ? 'Searching...' : 'Recover Link'}
+          </button>
+        </div>
+        {recoveryMessage && (
+          <div className="alert mt-md" style={{ whiteSpace: 'pre-line' }}>
+            {recoveryMessage}
+          </div>
+        )}
+      </div>
+
       <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
-        EquiSplit v1.0 — This tool provides recommendations only, not legal advice.
+        REDIS v1.0 — This tool provides recommendations only, not legal advice.
       </footer>
     </div>
   );

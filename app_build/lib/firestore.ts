@@ -44,6 +44,7 @@ export async function createSession(data: {
     business_concept: string;
     participant_count: number;
     session_type: Session['session_type'];
+    owner_email?: string;
 }): Promise<{ session: Session; owner: Participant }> {
     const sessionId = nanoid(12);
     const ownerId = nanoid(10);
@@ -79,6 +80,7 @@ export async function createSession(data: {
         id: ownerId,
         session_id: sessionId,
         name: 'Owner',
+        email: data.owner_email,
         is_owner: true,
         access_token: ownerToken,
         status: 'active',
@@ -129,7 +131,7 @@ export async function updateFactorWeights(sessionId: string, weights: FactorWeig
 
 // ─── Participant Operations ─────────────────────────────────────
 
-export async function addParticipant(sessionId: string, name: string): Promise<Participant> {
+export async function addParticipant(sessionId: string, name: string, email?: string): Promise<Participant> {
     const participantId = nanoid(10);
     const accessToken = nanoid(20);
 
@@ -137,6 +139,7 @@ export async function addParticipant(sessionId: string, name: string): Promise<P
         id: participantId,
         session_id: sessionId,
         name,
+        email,
         is_owner: false,
         access_token: accessToken,
         status: 'invited',
@@ -159,6 +162,12 @@ export async function getParticipantByToken(token: string): Promise<Participant 
     const q = query(collection(db, PARTICIPANTS), where('access_token', '==', token));
     const snap = await getDocs(q);
     return snap.docs.length > 0 ? (snap.docs[0].data() as Participant) : null;
+}
+
+export async function getParticipantByEmail(email: string): Promise<Participant[]> {
+    const q = query(collection(db, PARTICIPANTS), where('email', '==', email));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data() as Participant);
 }
 
 export async function updateParticipant(participantId: string, data: Partial<Participant>): Promise<void> {
@@ -203,7 +212,12 @@ export async function deleteResponsibility(respId: string): Promise<void> {
 
 // ─── Selection Operations ───────────────────────────────────────
 
-export async function saveSelections(participantId: string, sessionId: string, responsibilityIds: string[]): Promise<void> {
+export async function saveSelections(
+    participantId: string,
+    sessionId: string,
+    responsibilityIds: string[],
+    status: Selection['status'] = 'pending'
+): Promise<void> {
     // Delete existing selections for this participant
     const existing = query(collection(db, SELECTIONS), where('participant_id', '==', participantId));
     const snap = await getDocs(existing);
@@ -223,7 +237,7 @@ export async function saveSelections(participantId: string, sessionId: string, r
             responsibility_id: respId,
             round: 1,
             selected_at: Date.now(),
-            status: 'pending',
+            status: status,
         };
         batch.set(doc(db, SELECTIONS, selectionId), selection);
     }

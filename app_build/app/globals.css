@@ -4,7 +4,7 @@
 
 :root {
   /* Surface */
-  --bg-primary: #F8F7FC;
+  --bg-primary: #EFF6FF;
   --bg-secondary: #FFFFFF;
   --bg-tertiary: #F0ECFF;
   --bg-card: #FFFFFF;
@@ -26,12 +26,12 @@
   --text-muted: #D1D5DB;
   --text-inverse: #FFFFFF;
 
-  /* Accent — Violet/Purple gradient */
-  --accent-start: #7C3AED;
-  --accent-end: #A855F7;
+  /* Accent — Blueprint Blue gradient */
+  --accent-start: #2563EB;
+  --accent-end: #3B82F6;
   --accent-gradient: linear-gradient(135deg, var(--accent-start), var(--accent-end));
-  --accent-hover: #6D28D9;
-  --accent-solid: #7C3AED;
+  --accent-hover: #1D4ED8;
+  --accent-solid: #2563EB;
 
   /* Mode Colors */
   --mode-editing: #3b82f6;
