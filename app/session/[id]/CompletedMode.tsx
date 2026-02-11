@@ -149,7 +149,7 @@ export default function CompletedMode() {
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#F8F7FC', // match bg-primary
-            });
+            } as any);
 
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF({
