@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSessionStore } from '@/lib/store';
 import { Responsibility } from '@/lib/types';
 import { saveSelections, updateParticipant, updateSessionMode } from '@/lib/firestore';
@@ -14,7 +14,9 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
     const { session, responsibilities, participants, selections, currentParticipant } = useSessionStore();
     const [localSelectedIds, setLocalSelectedIds] = useState<Set<string>>(new Set());
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
 
     if (!session || !currentParticipant) return null;
 
@@ -31,6 +33,20 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
     // For participant view: show all active responsibilities (unavailable ones will be disabled)
     const participantVisibleResps = activeResps;
 
+    // Load draft selections on mount
+    useEffect(() => {
+        if (!hasLoadedDraft && currentParticipant && selections.length > 0) {
+            const mySelections = selections
+                .filter(s => s.participant_id === currentParticipant.id)
+                .map(s => s.responsibility_id);
+
+            if (mySelections.length > 0) {
+                setLocalSelectedIds(new Set(mySelections));
+            }
+            setHasLoadedDraft(true);
+        }
+    }, [currentParticipant, selections, hasLoadedDraft]);
+
     const toggleSelection = (respId: string) => {
         const newSet = new Set(localSelectedIds);
         if (newSet.has(respId)) {
@@ -38,6 +54,8 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
         } else {
             if (newSet.size < guidance.max_responsibilities) {
                 newSet.add(respId);
+            } else {
+                alert(`You can only select up to ${guidance.max_responsibilities} responsibilities.`);
             }
         }
         setLocalSelectedIds(newSet);
@@ -50,6 +68,28 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
     );
     const loadStatus = getLoadStatus(currentLoad);
 
+    const handleSaveDraft = async () => {
+        if (localSelectedIds.size === 0) {
+            // Optional: allow saving empty draft? Sure.
+        }
+        setIsSavingDraft(true);
+        try {
+            await saveSelections(
+                currentParticipant.id,
+                session.id,
+                [...localSelectedIds],
+                'draft'
+            );
+            // We don't update round1_submitted here
+            alert('Draft saved successfully!');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to save draft.');
+        } finally {
+            setIsSavingDraft(false);
+        }
+    };
+
     const handleSubmit = async () => {
         if (localSelectedIds.size < guidance.min_responsibilities) {
             alert(`Please select at least ${guidance.min_responsibilities} responsibilities.`);
@@ -57,7 +97,7 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
         }
         setIsSubmitting(true);
         try {
-            await saveSelections(currentParticipant.id, session.id, [...localSelectedIds]);
+            await saveSelections(currentParticipant.id, session.id, [...localSelectedIds], 'pending');
             await updateParticipant(currentParticipant.id, { round1_submitted: true });
             setSubmitted(true);
         } catch (err) {
@@ -268,7 +308,14 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                                 <div
                                     key={resp.id}
                                     className={`resp-card ${localSelectedIds.has(resp.id) ? 'selected' : ''} ${isUnavailable ? 'unavailable' : ''}`}
-                                    onClick={() => !isUnavailable && toggleSelection(resp.id)}
+                                    onClick={() => {
+                                        if (isUnavailable) {
+                                            alert(`This item is taken by ${unavailableBy?.name || 'someone else'} and cannot be shared.`);
+                                            return;
+                                        }
+                                        toggleSelection(resp.id);
+                                    }}
+                                    title={isUnavailable ? `Taken by ${unavailableBy?.name}` : ''}
                                 >
                                     <div className="resp-card-header">
                                         <div className={`checkbox ${localSelectedIds.has(resp.id) ? 'checked' : ''}`} />
@@ -288,6 +335,9 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
                                                 🔒 Taken by {unavailableBy?.name || 'Someone'}
                                             </span>
                                         )}
+                                        {resp.sharing_allowed === 'open' && !isUnavailable && (
+                                            <span className="badge badge-green">Open</span>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -297,7 +347,14 @@ export default function AcquiringMode({ isOwner }: AcquiringModeProps) {
             ))}
 
             {/* Submit */}
-            <div className="flex justify-center mt-xl">
+            <div className="flex justify-center mt-xl gap-md">
+                <button
+                    className="btn btn-secondary btn-lg"
+                    onClick={handleSaveDraft}
+                    disabled={isSavingDraft || isSubmitting}
+                >
+                    {isSavingDraft ? 'Saving...' : '💾 Save Draft'}
+                </button>
                 <button
                     className="btn btn-primary btn-lg"
                     onClick={handleSubmit}
