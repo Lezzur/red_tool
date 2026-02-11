@@ -262,7 +262,9 @@ export default function EditingMode({ isOwner }: EditingModeProps) {
                             <div key={p.id} className="flex justify-between items-center p-sm bg-glass rounded border border-default">
                                 <div>
                                     <div className="font-semibold">{p.name || `Participant ${i + 1}`}</div>
-                                    <div className="text-xs text-secondary capitalize">{p.status}</div>
+                                    <div className="text-xs text-secondary capitalize">
+                                        {p.status === 'invited' ? 'pending' : p.status === 'active' ? 'joined' : p.status}
+                                    </div>
                                 </div>
                                 <button
                                     className="btn btn-sm btn-secondary"
