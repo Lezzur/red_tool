@@ -8,8 +8,8 @@ export default function HomePage() {
   const router = useRouter();
   const [businessName, setBusinessName] = useState('');
   const [businessConcept, setBusinessConcept] = useState('');
-  const [participantCount, setParticipantCount] = useState(2);
-  const [participantNames, setParticipantNames] = useState<string[]>(['', '']);
+  const [participantCount, setParticipantCount] = useState(1);
+  const [participantNames, setParticipantNames] = useState<string[]>(['']);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
 
