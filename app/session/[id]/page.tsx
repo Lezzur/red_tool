@@ -160,7 +160,7 @@ export default function SessionPage() {
             case 'editing':
                 return <EditingMode isOwner={isOwner} />;
             case 'processing':
-                return <ProcessingMode />;
+                return <ProcessingMode isOwner={isOwner} />;
             case 'acquiring':
                 return <AcquiringMode isOwner={isOwner} />;
             case 'evaluating':

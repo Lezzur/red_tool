@@ -13,7 +13,7 @@ import { rebalanceWeights, getLoadStatus, getLoadLabel, calculateParticipantLoad
 
 type ProcessingStep = 'weights' | 'selection' | 'sharing';
 
-export default function ProcessingMode() {
+export default function ProcessingMode({ isOwner }: { isOwner: boolean }) {
     const {
         session, responsibilities, setResponsibilities,
         currentParticipant, ownerSelectedIds, toggleOwnerSelection,
@@ -29,6 +29,23 @@ export default function ProcessingMode() {
     const [targetLoadMax, setTargetLoadMax] = useState(session?.selection_guidance.target_load_max || 40);
 
     if (!session || !currentParticipant) return null;
+
+    // Non-owners see a waiting screen during processing
+    if (!isOwner) {
+        return (
+            <div style={{ textAlign: 'center', padding: 'var(--space-3xl) var(--space-xl)' }}>
+                <div className="empty-state">
+                    <div className="empty-state-icon">⏳</div>
+                    <h2 className="empty-state-title">Owner is setting things up</h2>
+                    <p className="empty-state-text">
+                        The session owner is assigning weights and configuring responsibilities.
+                        You&apos;ll be notified when it&apos;s your turn to select.
+                    </p>
+                    <div className="spinner spinner-lg" style={{ margin: 'var(--space-xl) auto' }} />
+                </div>
+            </div>
+        );
+    }
 
     const activeResps = responsibilities.filter(r => r.status !== 'archived');
     const totalWeight = activeResps.reduce((sum, r) => sum + r.weight, 0);
@@ -210,8 +227,8 @@ export default function ProcessingMode() {
                                         </td>
                                         <td>
                                             <span className={`badge ${resp.criticality === 'Critical' ? 'badge-red' :
-                                                    resp.criticality === 'High' ? 'badge-orange' :
-                                                        resp.criticality === 'Medium' ? 'badge-yellow' : 'badge-blue'
+                                                resp.criticality === 'High' ? 'badge-orange' :
+                                                    resp.criticality === 'Medium' ? 'badge-yellow' : 'badge-blue'
                                                 }`}>
                                                 {resp.criticality}
                                             </span>
@@ -308,8 +325,8 @@ export default function ProcessingMode() {
                                         <div className="resp-card-meta">
                                             <span className="badge badge-blue">{(resp.weight * 100).toFixed(1)}%</span>
                                             <span className={`badge ${resp.criticality === 'Critical' ? 'badge-red' :
-                                                    resp.criticality === 'High' ? 'badge-orange' :
-                                                        resp.criticality === 'Medium' ? 'badge-yellow' : 'badge-blue'
+                                                resp.criticality === 'High' ? 'badge-orange' :
+                                                    resp.criticality === 'Medium' ? 'badge-yellow' : 'badge-blue'
                                                 }`}>
                                                 {resp.criticality}
                                             </span>
