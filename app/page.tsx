@@ -1,66 +1,196 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createSession, addParticipant } from '@/lib/firestore';
+
+export default function HomePage() {
+  const router = useRouter();
+  const [businessName, setBusinessName] = useState('');
+  const [businessConcept, setBusinessConcept] = useState('');
+  const [participantCount, setParticipantCount] = useState(2);
+  const [participantNames, setParticipantNames] = useState<string[]>(['', '']);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleParticipantCountChange = (count: number) => {
+    setParticipantCount(count);
+    const currentNames = [...participantNames];
+    if (count > currentNames.length) {
+      while (currentNames.length < count) currentNames.push('');
+    } else {
+      currentNames.splice(count);
+    }
+    setParticipantNames(currentNames);
+  };
+
+  const updateParticipantName = (index: number, name: string) => {
+    const updated = [...participantNames];
+    updated[index] = name;
+    setParticipantNames(updated);
+  };
+
+  const handleCreate = async () => {
+    setError('');
+
+    if (!businessName.trim()) {
+      setError('Business name is required');
+      return;
+    }
+    if (businessConcept.length < 100) {
+      setError('Business concept must be at least 100 characters');
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const { session, owner } = await createSession({
+        business_name: businessName.trim(),
+        business_concept: businessConcept.trim(),
+        participant_count: participantCount,
+        session_type: 'asynchronous',
+      });
+
+      // Add participants
+      for (const name of participantNames) {
+        if (name.trim()) {
+          await addParticipant(session.id, name.trim());
+        }
+      }
+
+      // Store owner token locally
+      localStorage.setItem(`owner_${session.id}`, owner.access_token);
+      localStorage.setItem(`participant_id_${session.id}`, owner.id);
+
+      router.push(`/session/${session.id}/onboarding`);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to create session. Check your Firebase config.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="page-container" style={{ maxWidth: 720 }}>
+      {/* Hero */}
+      <div style={{ textAlign: 'center', padding: 'var(--space-3xl) 0 var(--space-2xl)' }}>
+        <span style={{ fontSize: 56, display: 'block', marginBottom: 'var(--space-md)' }}>⚖️</span>
+        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>EquiSplit</h1>
+        <p className="page-subtitle" style={{ maxWidth: 500, margin: '0 auto' }}>
+          AI-powered equity distribution for co-founders. Fair, transparent, and data-driven.
+        </p>
+      </div>
+
+      {/* Create Session Form */}
+      <div className="card" style={{ padding: 'var(--space-xl)' }}>
+        <h2 className="section-title">Create New Session</h2>
+        <p className="section-subtitle">Set up your equity distribution session. You&apos;ll be the owner with full control.</p>
+
+        {error && <div className="alert alert-error" style={{ marginBottom: 'var(--space-lg)' }}>⚠️ {error}</div>}
+
+        <div className="form-group">
+          <label className="form-label">Business Name</label>
+          <input
+            className="form-input"
+            type="text"
+            placeholder="e.g., TechCo, MyStartup"
+            value={businessName}
+            onChange={e => setBusinessName(e.target.value)}
+            maxLength={100}
+          />
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="form-group">
+          <label className="form-label">Business Concept</label>
+          <textarea
+            className="form-textarea"
+            placeholder="Describe your business idea in detail. Include what you're building, who it's for, your business model, and current stage. The more detail you provide, the better the AI can generate relevant responsibilities..."
+            value={businessConcept}
+            onChange={e => setBusinessConcept(e.target.value)}
+            style={{ minHeight: 160 }}
+          />
+          <div className={`char-counter ${businessConcept.length < 100 ? 'error' : ''}`}>
+            {businessConcept.length}/100 min characters
+          </div>
         </div>
-      </main>
+
+        <div className="form-group">
+          <label className="form-label">Number of Participants (excluding you)</label>
+          <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                className={`btn ${participantCount === n ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => handleParticipantCountChange(n)}
+                type="button"
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Participant Names</label>
+          <div className="flex flex-col gap-sm">
+            {participantNames.map((name, i) => (
+              <input
+                key={i}
+                className="form-input"
+                type="text"
+                placeholder={`Participant ${i + 1} name`}
+                value={name}
+                onChange={e => updateParticipantName(i, e.target.value)}
+              />
+            ))}
+          </div>
+          <p className="form-hint">You can add or rename participants later.</p>
+        </div>
+
+        <button
+          className="btn btn-primary btn-lg"
+          onClick={handleCreate}
+          disabled={isCreating || businessConcept.length < 100 || !businessName.trim()}
+          style={{ width: '100%', marginTop: 'var(--space-md)' }}
+        >
+          {isCreating ? (
+            <>
+              <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+              Creating Session...
+            </>
+          ) : (
+            '🚀 Create Session & Start'
+          )}
+        </button>
+      </div>
+
+      {/* How It Works */}
+      <div style={{ marginTop: 'var(--space-2xl)' }}>
+        <h3 className="section-title" style={{ textAlign: 'center' }}>How It Works</h3>
+        <div className="grid-3" style={{ marginTop: 'var(--space-lg)' }}>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 'var(--space-sm)' }}>📝</div>
+            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>1. Editing</h4>
+            <p className="text-sm text-secondary">AI generates responsibilities. Team nominates additions. Owner cleans and assigns weights.</p>
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 'var(--space-sm)' }}>🎯</div>
+            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>2. Acquiring</h4>
+            <p className="text-sm text-secondary">Participants independently select responsibilities. Blind selection ensures fairness.</p>
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 'var(--space-sm)' }}>⚖️</div>
+            <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>3. Evaluating</h4>
+            <p className="text-sm text-secondary">Owner resolves conflicts, adds factors, and the AI calculates fair equity splits.</p>
+          </div>
+        </div>
+      </div>
+
+      <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
+        EquiSplit v1.0 — This tool provides recommendations only, not legal advice.
+      </footer>
     </div>
   );
 }
