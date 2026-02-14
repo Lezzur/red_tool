@@ -470,9 +470,13 @@ select:focus {
   gap: var(--space-md);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .participant-inputs {
     flex-direction: column;
+  }
+
+  .participant-field {
+    width: 100%;
   }
 
   .recovery-controls {
