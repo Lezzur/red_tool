@@ -254,14 +254,15 @@ a:hover {
 }
 
 .btn-primary {
-  background: var(--accent-gradient);
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-sm), var(--shadow-glow);
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: #1D4ED8;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md), 0 0 30px rgba(124, 58, 237, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -415,6 +416,37 @@ select:focus {
   font-size: var(--font-xs);
   color: var(--text-tertiary);
   margin-top: var(--space-xs);
+}
+
+.form-label-inline {
+  display: block;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+/* Participant Row Layout */
+.participant-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.participant-inputs {
+  display: flex;
+  flex: 1;
+  gap: var(--space-sm);
+}
+
+.participant-field {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .participant-inputs {
+    flex-direction: column;
+  }
 }
 
 .form-error {

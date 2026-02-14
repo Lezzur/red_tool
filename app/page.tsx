@@ -15,6 +15,7 @@ export default function HomePage() {
   const [participantInputs, setParticipantInputs] = useState<{ name: string; email: string }[]>([{ name: '', email: '' }]);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
+  const [conceptTouched, setConceptTouched] = useState(false);
 
   // Recovery State
   const [recoveryEmail, setRecoveryEmail] = useState('');
@@ -120,7 +121,7 @@ export default function HomePage() {
     <div className="page-container" style={{ maxWidth: 720 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: 'var(--space-3xl) 0 var(--space-2xl)' }}>
-        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>REDIS</h1>
+        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>REDIST</h1>
         <p className="page-subtitle" style={{ maxWidth: 500, margin: '0 auto' }}>
           AI-powered equity distribution for co-founders. Fair, transparent, and data-driven.
         </p>
@@ -163,49 +164,64 @@ export default function HomePage() {
             placeholder="Describe your business idea in detail. Include what you're building, who it's for, your business model, and current stage. The more detail you provide, the better the AI can generate relevant responsibilities..."
             value={businessConcept}
             onChange={e => setBusinessConcept(e.target.value)}
+            onBlur={() => setConceptTouched(true)}
             style={{ minHeight: 160 }}
           />
-          <div className={`char-counter ${businessConcept.length < 100 ? 'error' : ''}`}>
+          <div className={`char-counter ${conceptTouched && businessConcept.length < 100 ? 'error' : ''}`}>
             {businessConcept.length}/100 min characters
           </div>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Number of Participants (excluding you)</label>
-          <input
-            className="form-input"
-            type="number"
-            min={1}
-            max={50}
-            value={participantCount}
-            onChange={e => handleParticipantCountChange(Math.max(1, parseInt(e.target.value) || 0))}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Participant Names</label>
+          <label className="form-label">Participants (excluding you)</label>
           <div className="flex flex-col gap-sm">
             {participantInputs.map((input, i) => (
-              <div key={i} className="flex gap-sm">
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder={`Participant ${i + 1} Name`}
-                  value={input.name}
-                  onChange={e => updateParticipantInput(i, 'name', e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <input
-                  className="form-input"
-                  type="email"
-                  placeholder="Email (Optional)"
-                  value={input.email}
-                  onChange={e => updateParticipantInput(i, 'email', e.target.value)}
-                  style={{ flex: 1 }}
-                />
+              <div key={i} className="participant-row">
+                <div className="participant-inputs">
+                  <div className="participant-field">
+                    <label htmlFor={`participant-name-${i}`} className="form-label-inline">Name</label>
+                    <input
+                      id={`participant-name-${i}`}
+                      className="form-input"
+                      type="text"
+                      placeholder={`Participant ${i + 1}`}
+                      value={input.name}
+                      onChange={e => updateParticipantInput(i, 'name', e.target.value)}
+                    />
+                  </div>
+                  <div className="participant-field">
+                    <label htmlFor={`participant-email-${i}`} className="form-label-inline">Email (Optional)</label>
+                    <input
+                      id={`participant-email-${i}`}
+                      className="form-input"
+                      type="email"
+                      placeholder="email@example.com"
+                      value={input.email}
+                      onChange={e => updateParticipantInput(i, 'email', e.target.value)}
+                    />
+                  </div>
+                </div>
+                {participantInputs.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn btn-icon btn-ghost"
+                    onClick={() => handleParticipantCountChange(participantCount - 1)}
+                    aria-label={`Remove participant ${i + 1}`}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             ))}
           </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => handleParticipantCountChange(participantCount + 1)}
+            style={{ marginTop: 'var(--space-sm)' }}
+          >
+            + Add Participant
+          </button>
           <p className="form-hint">You can add or rename participants later.</p>
         </div>
 
@@ -246,6 +262,7 @@ export default function HomePage() {
             className="btn btn-secondary"
             onClick={handleRecovery}
             disabled={isRecovering || !recoveryEmail.trim()}
+            style={{ borderColor: 'var(--border-strong)' }}
           >
             {isRecovering ? 'Searching...' : 'Recover Link'}
           </button>
@@ -258,7 +275,7 @@ export default function HomePage() {
       </div>
 
       <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
-        REDIS v1.0 — This tool provides recommendations only, not legal advice.
+        REDIST v1.0 — This tool provides recommendations only, not legal advice.
       </footer>
     </div>
   );
