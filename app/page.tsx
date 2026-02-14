@@ -121,7 +121,7 @@ export default function HomePage() {
     <div className="page-container" style={{ maxWidth: 720 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: 'var(--space-3xl) 0 var(--space-2xl)' }}>
-        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>REDIS</h1>
+        <h1 className="page-title" style={{ fontSize: 'var(--font-4xl)' }}>REDIST</h1>
         <p className="page-subtitle" style={{ maxWidth: 500, margin: '0 auto' }}>
           AI-powered equity distribution for co-founders. Fair, transparent, and data-driven.
         </p>
@@ -262,6 +262,7 @@ export default function HomePage() {
             className="btn btn-secondary"
             onClick={handleRecovery}
             disabled={isRecovering || !recoveryEmail.trim()}
+            style={{ borderColor: 'var(--border-strong)' }}
           >
             {isRecovering ? 'Searching...' : 'Recover Link'}
           </button>
@@ -274,7 +275,7 @@ export default function HomePage() {
       </div>
 
       <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
-        REDIS v1.0 — This tool provides recommendations only, not legal advice.
+        REDIST v1.0 — This tool provides recommendations only, not legal advice.
       </footer>
     </div>
   );
