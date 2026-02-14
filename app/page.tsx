@@ -125,6 +125,9 @@ export default function HomePage() {
         <p className="page-subtitle" style={{ maxWidth: 500, margin: '0 auto' }}>
           AI-powered equity distribution for co-founders. Fair, transparent, and data-driven.
         </p>
+        <a href="#recovery" className="text-link" style={{ fontSize: 'var(--font-sm)', marginTop: 'var(--space-sm)', display: 'inline-block' }}>
+          Returning user? Recover your session →
+        </a>
       </div>
 
       {/* Create Session Form */}
@@ -147,7 +150,7 @@ export default function HomePage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Your Email (Recommended for Recovery/Notifications)</label>
+          <label className="form-label">Your Email (Required for session recovery)</label>
           <input
             className="form-input"
             type="email"
@@ -155,10 +158,24 @@ export default function HomePage() {
             value={ownerEmail}
             onChange={e => setOwnerEmail(e.target.value)}
           />
+          <p className="form-hint">Without an email, you won&apos;t be able to recover your session if you lose the link.</p>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Business Concept</label>
+          <div className="flex justify-between items-center" style={{ marginBottom: 'var(--space-xs)' }}>
+            <label className="form-label" style={{ marginBottom: 0 }}>Business Concept</label>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => {
+                setBusinessName('TechFlow');
+                setBusinessConcept('TechFlow is a B2B SaaS platform that helps software development teams automate their CI/CD pipelines. We target mid-size tech companies (50-500 employees) who struggle with deployment complexity. Our freemium model offers basic automation free, with paid tiers for advanced features like multi-cloud deployment and compliance reporting. Currently in beta with 12 paying customers.');
+                setConceptTouched(true);
+              }}
+            >
+              Try Demo →
+            </button>
+          </div>
           <textarea
             className="form-textarea"
             placeholder="Describe your business idea in detail. Include what you're building, who it's for, your business model, and current stage. The more detail you provide, the better the AI can generate relevant responsibilities..."
@@ -246,10 +263,10 @@ export default function HomePage() {
       <HowItWorks />
 
       {/* Recovery Section */}
-      <div className="card" style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', borderColor: 'var(--border-subtle)' }}>
+      <div id="recovery" className="card" style={{ marginTop: 'var(--space-2xl)', padding: 'var(--space-xl)', borderColor: 'var(--border-subtle)' }}>
         <h3 className="section-title" style={{ fontSize: 'var(--font-lg)' }}>🔄 Lost your session link?</h3>
         <p className="section-subtitle">Enter your email to recover your access link.</p>
-        <div className="form-group flex gap-md">
+        <div className="form-group recovery-controls">
           <input
             className="form-input"
             type="email"
@@ -259,10 +276,9 @@ export default function HomePage() {
             style={{ flex: 1 }}
           />
           <button
-            className="btn btn-secondary"
+            className="btn btn-outline"
             onClick={handleRecovery}
             disabled={isRecovering || !recoveryEmail.trim()}
-            style={{ borderColor: 'var(--border-strong)' }}
           >
             {isRecovering ? 'Searching...' : 'Recover Link'}
           </button>
@@ -274,7 +290,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-muted)', fontSize: 'var(--font-xs)' }}>
+      <footer style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: '#555', fontSize: 'var(--font-xs)' }}>
         REDIST v1.0 — This tool provides recommendations only, not legal advice.
       </footer>
     </div>
