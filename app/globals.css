@@ -417,6 +417,37 @@ select:focus {
   margin-top: var(--space-xs);
 }
 
+.form-label-inline {
+  display: block;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+/* Participant Row Layout */
+.participant-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.participant-inputs {
+  display: flex;
+  flex: 1;
+  gap: var(--space-sm);
+}
+
+.participant-field {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .participant-inputs {
+    flex-direction: column;
+  }
+}
+
 .form-error {
   font-size: var(--font-xs);
   color: var(--load-red);
