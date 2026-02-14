@@ -249,20 +249,18 @@ a:hover {
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .btn-primary {
-  background: #DC2626 !important;
-  background-color: #DC2626 !important;
-  background-image: none !important;
-  color: #FFFFFF !important;
+  background: #2563EB;
+  color: #FFFFFF;
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #B91C1C !important;
+  background: #1D4ED8;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }

@@ -229,7 +229,7 @@ export default function HomePage() {
           className="btn btn-primary btn-lg"
           onClick={handleCreate}
           disabled={isCreating || businessConcept.length < 100 || !businessName.trim()}
-          style={{ width: '100%', marginTop: 'var(--space-md)', backgroundColor: '#DC2626', background: '#DC2626' }}
+          style={{ width: '100%', marginTop: 'var(--space-md)' }}
         >
           {isCreating ? (
             <>
