@@ -254,14 +254,15 @@ a:hover {
 }
 
 .btn-primary {
-  background: var(--accent-gradient);
-  color: var(--text-inverse);
-  box-shadow: var(--shadow-sm), var(--shadow-glow);
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: #1D4ED8;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md), 0 0 30px rgba(124, 58, 237, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
