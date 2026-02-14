@@ -254,7 +254,9 @@ a:hover {
 }
 
 .btn-primary {
+  background: #2563EB !important;
   background-color: #2563EB !important;
+  background-image: none !important;
   color: #FFFFFF !important;
   box-shadow: var(--shadow-sm);
 }
